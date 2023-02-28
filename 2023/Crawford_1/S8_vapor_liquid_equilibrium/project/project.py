@@ -130,15 +130,14 @@ def part_1a_initial_data_input_to_json(job):
 
 
 @Project.post(part_1a_initial_data_input_to_json)
-@Project.operation.with_directives(
+@Project.operation(directives=
     {
         "np": 1,
         "ngpu": 0,
         "memory": memory_needed,
         "walltime": walltime_mosdef_hr,
-    }
+    }, with_job=True
 )
-@flow.with_job
 def initial_parameters(job):
     """Set the initial job parameters into the jobs doc json file."""
     # select
@@ -235,7 +234,6 @@ def statepoint_without_temperature(job):
 
 # check if GOMC-MOSDEF wrote the gomc files
 @Project.label
-@flow.with_job
 def mosdef_input_written(job):
     """Check that the mosdef files (psf, pdb, and force field (FF) files) are written ."""
     file_written_bool = False
@@ -283,7 +281,6 @@ def gomc_control_file_written(job, control_filename_str):
 
 # checking if the GOMC control file is written for the equilb run with the selected ensemble
 @Project.label
-@flow.with_job
 def part_2a_gomc_equilb_design_ensemble_control_file_written(job):
     """General check that the gomc_equilb_design_ensemble (run temperature) gomc control file is written."""
     return gomc_control_file_written(job, gomc_equilb_design_ensemble_control_file_name_str)
@@ -291,7 +288,6 @@ def part_2a_gomc_equilb_design_ensemble_control_file_written(job):
 
 # checking if the GOMC control file is written for the production run
 @Project.label
-@flow.with_job
 def part_2b_gomc_production_control_file_written(job):
     """General check that the gomc_production_control_file (run temperature) is written."""
     return gomc_control_file_written(job, gomc_production_control_file_name_str)
@@ -320,14 +316,12 @@ def gomc_simulation_started(job, control_filename_str):
 
 # check if equilb_with design ensemble GOMC run is started by seeing if the GOMC consol file and the merged psf exist
 @Project.label
-@flow.with_job
 def part_3a_output_gomc_equilb_design_ensemble_started(job):
     """Check to see if the gomc_equilb_design_ensemble (set temperature) simulation is started."""
     return gomc_simulation_started(job, gomc_equilb_design_ensemble_control_file_name_str)
 
 # check if production GOMC run is started by seeing if the GOMC consol file and the merged psf exist
 @Project.label
-@flow.with_job
 def part_3b_output_gomc_production_run_started(job):
     """Check to see if the gomc production run (set temperature) simulation is started."""
     return gomc_simulation_started(job, gomc_production_control_file_name_str)
@@ -369,14 +363,12 @@ def gomc_sim_completed_properly(job, control_filename_str):
 
 # check if equilb selected ensemble GOMC run completed by checking the end of the GOMC consol file
 @Project.label
-@flow.with_job
 def part_4a_job_gomc_equilb_design_ensemble_completed_properly(job):
     """Check to see if the gomc_equilb_design_ensemble (set temperature) simulation was completed properly."""
     return gomc_sim_completed_properly(job, gomc_equilb_design_ensemble_control_file_name_str)
 
 # check if production GOMC run completed by checking the end of the GOMC consol file
 @Project.label
-@flow.with_job
 def part_4b_job_production_run_completed_properly(job):
     """Check to see if the gomc production run (set temperature) simulation was completed properly."""
     return gomc_sim_completed_properly(job, gomc_production_control_file_name_str)
@@ -384,9 +376,7 @@ def part_4b_job_production_run_completed_properly(job):
 
 
 # check if analysis is done for the individual replicates wrote the gomc files
-@Project.pre(part_4b_job_production_run_completed_properly)
 @Project.label
-@flow.with_job
 def part_5a_analysis_individual_simulation_averages_completed(job):
     """Check that the individual simulation averages files are written ."""
     file_written_bool = False
@@ -404,7 +394,7 @@ def part_5a_analysis_individual_simulation_averages_completed(job):
 
 
 # check if analysis for averages of all the replicates is completed
-@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
+#@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
 @Project.label
 def part_5b_analysis_replica_averages_completed(*jobs):
     """Check that the individual simulation averages files are written ."""
@@ -431,9 +421,9 @@ def part_5b_analysis_replica_averages_completed(*jobs):
     return all_file_written_bool_pass
 
 # check if analysis for critical points is completed
-@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
-@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
-@Project.pre(part_5b_analysis_replica_averages_completed)
+#@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
+#@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
+#@Project.pre(part_5b_analysis_replica_averages_completed)
 @Project.label
 def part_5c_analysis_critical_and_boiling_points_replicate_data_completed(*jobs):
     """Check that the critical and boiling point replicate file is written ."""
@@ -461,9 +451,9 @@ def part_5c_analysis_critical_and_boiling_points_replicate_data_completed(*jobs)
     return file_written_bool
 
 # check if analysis for critical points is completed
-@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
-@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
-@Project.pre(part_5b_analysis_replica_averages_completed)
+#@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
+#@Project.pre(part_5a_analysis_individual_simulation_averages_completed)
+#@Project.pre(part_5b_analysis_replica_averages_completed)
 @Project.label
 def part_5d_analysis_critical_and_boiling_points_avg_std_data_completed(*jobs):
     """Check that the avg and std dev critical and boiling point data file is written ."""
@@ -724,15 +714,14 @@ def build_charmm(job, write_files=True):
 @Project.post(part_2a_gomc_equilb_design_ensemble_control_file_written)
 @Project.post(part_2b_gomc_production_control_file_written)
 @Project.post(mosdef_input_written)
-@Project.operation.with_directives(
+@Project.operation(directives=
     {
         "np": 1,
         "ngpu": 0,
         "memory": memory_needed,
         "walltime": walltime_mosdef_hr,
-    }
+    }, with_job=True
 )
-@flow.with_job
 def build_psf_pdb_ff_gomc_conf(job):
     """Build the Charmm object and write the pdb, psd, and force field (FF) files for all the simulations in the workspace."""
     gomc_charmm_object_with_files = build_charmm(job, write_files=True)
@@ -1006,16 +995,16 @@ def build_psf_pdb_ff_gomc_conf(job):
 @Project.pre(part_2a_gomc_equilb_design_ensemble_control_file_written)
 @Project.post(part_3a_output_gomc_equilb_design_ensemble_started)
 @Project.post(part_4a_job_gomc_equilb_design_ensemble_completed_properly)
-@Project.operation.with_directives(
+@Project.operation(directives=
     {
         "np": lambda job: job.doc.gomc_ncpu,
         "ngpu": lambda job: job.doc.gomc_ngpu,
         "memory": memory_needed,
         "walltime": walltime_gomc_equilbrium_hr,
-    },
+    }, with_job=True, cmd=True
 )
-@flow.with_job
-@flow.cmd
+#@flow.with_job
+#@flow.cmd
 def run_equilb_ensemble_gomc_command(job):
     """Run the gomc equilb_ensemble simulation."""
     control_file_name_str = gomc_equilb_design_ensemble_control_file_name_str
@@ -1052,16 +1041,14 @@ def run_equilb_ensemble_gomc_command(job):
 @Project.pre(part_4a_job_gomc_equilb_design_ensemble_completed_properly)
 @Project.post(part_3b_output_gomc_production_run_started)
 @Project.post(part_4b_job_production_run_completed_properly)
-@Project.operation.with_directives(
+@Project.operation(directives=
     {
         "np": lambda job: job.doc.gomc_ncpu,
         "ngpu": lambda job: job.doc.gomc_ngpu,
         "memory": memory_needed,
         "walltime": walltime_gomc_production_hr,
-    },
+    }, with_job=True, cmd=True
 )
-@flow.with_job
-@flow.cmd
 def run_production_run_gomc_command(job):
     """Run the gomc_production_ensemble simulation."""
 
@@ -1092,24 +1079,22 @@ def run_production_run_gomc_command(job):
 # ******************************************************
 # ******************************************************
 
-
-@Project.operation.with_directives(
+@Project.pre(part_4b_job_production_run_completed_properly)
+#@Project.pre(
+#     lambda * jobs: all(
+#         part_4b_job_production_run_completed_properly(job, gomc_production_control_file_name_str)
+#         for job in jobs
+#     )
+#)
+@Project.post(part_5a_analysis_individual_simulation_averages_completed)
+@Project.operation(directives=
      {
          "np": 1,
          "ngpu": 0,
          "memory": memory_needed,
          "walltime": walltime_gomc_analysis_hr,
-     }
+     }, with_job=True
 )
-@FlowProject.pre(
-     lambda * jobs: all(
-         part_4b_job_production_run_completed_properly(job, gomc_production_control_file_name_str)
-         for job in jobs
-     )
-)
-@Project.pre(part_4b_job_production_run_completed_properly)
-@Project.post(part_5a_analysis_individual_simulation_averages_completed)
-@flow.with_job
 def part_5a_analysis_individual_simulation_averages(*jobs):
     # remove the total averged replicate data and all analysis data after this,
     # as it is no longer valid when adding more simulations
@@ -1445,21 +1430,20 @@ def part_5a_analysis_individual_simulation_averages(*jobs):
 # ******************************************************
 # ******************************************************
 
-@aggregator.groupby(key=statepoint_without_replica, sort_by="production_temperature_K", sort_ascending=False)
-@Project.operation.with_directives(
-     {
-         "np": 1,
-         "ngpu": 0,
-         "memory": memory_needed,
-         "walltime": walltime_gomc_analysis_hr,
-     }
-)
-
 @Project.pre(lambda *jobs: all(part_5a_analysis_individual_simulation_averages_completed(j)
                                for j in jobs[0]._project))
 @Project.pre(part_4b_job_production_run_completed_properly)
 @Project.pre(part_5a_analysis_individual_simulation_averages_completed)
 @Project.post(part_5b_analysis_replica_averages_completed)
+#@aggregator.groupby(key=statepoint_without_replica, sort_by="production_temperature_K", sort_ascending=False)
+@Project.operation(directives=
+     {
+         "np": 1,
+         "ngpu": 0,
+         "memory": memory_needed,
+         "walltime": walltime_gomc_analysis_hr,
+     }, aggregator=aggregator.groupby(key=statepoint_without_replica, sort_by="production_temperature_K", sort_ascending=False)
+)
 def part_5b_analysis_replica_averages(*jobs):
     # ***************************************************
     #  create the required lists and file labels total averages across the replicates (start)
@@ -1799,16 +1783,7 @@ def part_5b_analysis_replica_averages(*jobs):
 # ******************************************************
 # ******************************************************
 
-@aggregator.groupby(key=statepoint_without_temperature, sort_by="production_temperature_K", sort_ascending=True)
-@Project.operation.with_directives(
-     {
-         "np": 1,
-         "ngpu": 0,
-         "memory": memory_needed,
-         "walltime": walltime_gomc_analysis_hr,
-     }
-)
-@FlowProject.pre(
+@Project.pre(
      lambda * jobs: all(
          gomc_sim_completed_properly(job, gomc_production_control_file_name_str)
          for job in jobs
@@ -1818,6 +1793,14 @@ def part_5b_analysis_replica_averages(*jobs):
 @Project.pre(part_5a_analysis_individual_simulation_averages_completed)
 @Project.pre(part_5b_analysis_replica_averages_completed)
 @Project.post(part_5c_analysis_critical_and_boiling_points_replicate_data_completed)
+@Project.operation( directives=
+     {
+         "np": 1,
+         "ngpu": 0,
+         "memory": memory_needed,
+         "walltime": walltime_gomc_analysis_hr,
+     }, aggregator=aggregator.groupby(key=statepoint_without_temperature, sort_by="production_temperature_K", sort_ascending=True)
+)
 def part_5c_analysis_critical_and_boiling__points_replicate_data(*jobs):
     # ***************************************************
     #  user changable variables (start)
@@ -2165,26 +2148,26 @@ def part_5c_analysis_critical_and_boiling__points_replicate_data(*jobs):
 # data analysis - get the critical and boilin point data avg and std. dev across the replicates (start)
 # ******************************************************
 # ******************************************************
-@aggregator.groupby(key=statepoint_without_temperature, sort_by="production_temperature_K", sort_ascending=True)
-@Project.operation.with_directives(
-     {
-         "np": 1,
-         "ngpu": 0,
-         "memory": memory_needed,
-         "walltime": walltime_gomc_analysis_hr,
-     }
-)
-@FlowProject.pre(
+@Project.pre(part_4b_job_production_run_completed_properly)
+@Project.pre(
      lambda * jobs: all(
          gomc_sim_completed_properly(job, gomc_production_control_file_name_str)
          for job in jobs
      )
 )
-@Project.pre(part_4b_job_production_run_completed_properly)
 @Project.pre(part_5a_analysis_individual_simulation_averages_completed)
 @Project.pre(part_5b_analysis_replica_averages_completed)
 @Project.pre(part_5c_analysis_critical_and_boiling_points_replicate_data_completed)
 @Project.post(part_5d_analysis_critical_and_boiling_points_avg_std_data_completed)
+@Project.operation(directives=
+     {
+         "np": 1,
+         "ngpu": 0,
+         "memory": memory_needed,
+         "walltime": walltime_gomc_analysis_hr,
+     }, aggregator=aggregator.groupby(key=statepoint_without_temperature, sort_by="production_temperature_K", sort_ascending=True)
+)
+
 def part_5d_analysis_critical_and_boiling_points_avg_std_data(*jobs):
     # ***********************
     # calc the Critical points (start)
